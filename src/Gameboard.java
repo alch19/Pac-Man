@@ -26,6 +26,7 @@ public class Gameboard extends JPanel implements ActionListener{
     private int rows=20;
     private int frameWidth=800;
     private int frameHeight=600;
+    private int pelletCounter=0;
 
     public Gameboard() {
         initBoard();
@@ -49,22 +50,6 @@ public class Gameboard extends JPanel implements ActionListener{
         tile=frameWidth/rows;
         maze=generateRandomMaze(rows,cols);
     }
-
-    /*private int[][] generateRandomMaze(int rows, int cols) {
-        Random rand=new Random();
-        int[][] newMaze=new int[rows][cols];
-        for (int y = 0; y < rows; y++) {
-            for (int x = 0; x < cols; x++) {
-                if (y == 0 || y == rows - 1 || x == 0 || x == cols - 1) {
-                    newMaze[y][x] = 1;
-                } else {
-                    newMaze[y][x] = rand.nextInt(2);
-                }
-            }
-        }
-        newMaze[1][1] = 0;
-        return newMaze;
-    }*/
 
     private int[][] generateRandomMaze(int rows, int cols) {
         int[][] newMaze = new int[rows][cols];
@@ -98,7 +83,13 @@ public class Gameboard extends JPanel implements ActionListener{
                 }
             }
         }
-
+        for (int y = 0; y < rows; y++) {
+            for (int x = 0; x < cols; x++) {
+                if (newMaze[y][x] == 0) {
+                    newMaze[y][x] = 2;
+                }
+            }
+        }
         return newMaze;
     }
 
@@ -119,6 +110,12 @@ public class Gameboard extends JPanel implements ActionListener{
         if (isValidMove(pacManX + newDX, pacManY + newDY)) {
             pacManDX = newDX;
             pacManDY = newDY;
+        }
+        int gridX = pacManX / tile;
+        int gridY = pacManY / tile;
+        if (maze[gridY][gridX] == 2) {
+            maze[gridY][gridX] = 0;
+            pelletCounter++;
         }
     }
 
@@ -141,6 +138,7 @@ public class Gameboard extends JPanel implements ActionListener{
     private void drawGame(Graphics g) {
         drawMaze(g);
         drawPacMan(g);
+        drawScore(g);
     }
 
     private void drawMaze(Graphics g) {
@@ -149,7 +147,7 @@ public class Gameboard extends JPanel implements ActionListener{
                 if (maze[y][x] == 1) {
                     g.setColor(Color.BLUE);
                     g.fillRect(x * tile, y * tile, tile, tile);
-                } else if (maze[y][x] == 0) {
+                } else if (maze[y][x] == 2) {
                     g.setColor(Color.YELLOW);
                     g.fillOval(x * tile + tile / 4, y * tile + tile / 4, tile / 2, tile / 2);
                 }
@@ -162,6 +160,10 @@ public class Gameboard extends JPanel implements ActionListener{
         g.fillOval(pacManX, pacManY, tile, tile);
     }
 
+    private void drawScore(Graphics g) {
+        g.setColor(Color.WHITE);
+        g.drawString("Pellets Collected: " + pelletCounter, 10, frameHeight - 10);
+    }
 
     private class KAdapter extends KeyAdapter{
         @Override
