@@ -5,6 +5,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.Random;
+
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
@@ -14,15 +16,14 @@ public class Gameboard extends JPanel implements ActionListener{
     private int pacManY;
     private int pacManDX;
     private int pacManDY;
-    private final int[][] maze = {
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1},
-        {1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1},
-        {1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1},
-        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
-    };
+    private int newDX;
+    private int newDY;
+    private int tile;
+    private int[][] maze;
+    private int cols=20;
+    private int rows=20;
+    private int frameWidth=800;
+    private int frameHeight=600;
 
     public Gameboard() {
         initBoard();
@@ -30,16 +31,37 @@ public class Gameboard extends JPanel implements ActionListener{
         pacManY=40;
         pacManDX=0;
         pacManDY=0;
+        newDX=0;
+        newDY=0;
     }
 
     private void initBoard() {
         setBackground(Color.BLACK);
         setFocusable(true);
-        setPreferredSize(new Dimension(800,600));
+        setPreferredSize(new Dimension(frameWidth,frameHeight));
         addKeyListener(new KAdapter());
 
         timer = new Timer(40, this);
         timer.start();
+
+        tile=frameWidth/rows;
+        maze=generateRandomMaze(rows,cols);
+    }
+
+    private int[][] generateRandomMaze(int rows, int cols) {
+        Random rand=new Random();
+        int[][] newMaze=new int[rows][cols];
+        for (int y = 0; y < rows; y++) {
+            for (int x = 0; x < cols; x++) {
+                if (y == 0 || y == rows - 1 || x == 0 || x == cols - 1) {
+                    newMaze[y][x] = 1;
+                } else {
+                    newMaze[y][x] = rand.nextInt(2);
+                }
+            }
+        }
+        newMaze[1][1] = 0;
+        return newMaze;
     }
 
     @Override
@@ -56,11 +78,15 @@ public class Gameboard extends JPanel implements ActionListener{
             pacManX = newPacManX;
             pacManY = newPacManY;
         }
+        if (isValidMove(pacManX + newDX, pacManY + newDY)) {
+            pacManDX = newDX;
+            pacManDY = newDY;
+        }
     }
 
     private boolean isValidMove(int x, int y) {
-        int gridX=x/40;
-        int gridY=y/40;
+        int gridX=x/tile;
+        int gridY=y/tile;
 
         if (maze[gridY][gridX] == 1) {
             return false;
@@ -84,10 +110,10 @@ public class Gameboard extends JPanel implements ActionListener{
             for (int x = 0; x < maze[0].length; x++) {
                 if (maze[y][x] == 1) {
                     g.setColor(Color.BLUE);
-                    g.fillRect(x * 40, y * 40, 40, 40);
+                    g.fillRect(x * tile, y * tile, tile, tile);
                 } else if (maze[y][x] == 0) {
                     g.setColor(Color.YELLOW);
-                    g.fillOval(x * 40 + 15, y * 40 + 15, 10, 10);
+                    g.fillOval(x * tile + tile / 4, y * tile + tile / 4, tile / 2, tile / 2);
                 }
             }
         }
@@ -95,7 +121,7 @@ public class Gameboard extends JPanel implements ActionListener{
 
     private void drawPacMan(Graphics g) {
         g.setColor(Color.YELLOW);
-        g.fillOval(pacManX, pacManY, 40, 40);
+        g.fillOval(pacManX, pacManY, tile, tile);
     }
 
 
@@ -105,17 +131,17 @@ public class Gameboard extends JPanel implements ActionListener{
             int key = e.getKeyCode();
 
             if (key == KeyEvent.VK_LEFT) {
-                pacManDX = -40;
-                pacManDY = 0;
+                newDX = -tile;
+                newDY = 0;
             } else if (key == KeyEvent.VK_RIGHT) {
-                pacManDX = 40;
-                pacManDY = 0;
+                newDX = tile;
+                newDY = 0;
             } else if (key == KeyEvent.VK_UP) {
-                pacManDX = 0;
-                pacManDY = -40;
+                newDX = 0;
+                newDY = -tile;
             } else if (key == KeyEvent.VK_DOWN) {
-                pacManDX = 0;
-                pacManDY = 40;
+                newDX = 0;
+                newDY = tile;
             }
         }
     }
