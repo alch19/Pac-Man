@@ -27,6 +27,8 @@ public class Gameboard extends JPanel implements ActionListener{
     private int frameWidth=800;
     private int frameHeight=600;
     private int pelletCounter=0;
+    private int totalPellets=0;
+    private int scoreHeight=30;
 
     public Gameboard() {
         initBoard();
@@ -47,7 +49,7 @@ public class Gameboard extends JPanel implements ActionListener{
         timer = new Timer(100, this);
         timer.start();
 
-        tile=frameWidth/rows;
+        tile=(frameWidth-scoreHeight)/rows;
         maze=generateRandomMaze(rows,cols);
     }
 
@@ -87,6 +89,7 @@ public class Gameboard extends JPanel implements ActionListener{
             for (int x = 0; x < cols; x++) {
                 if (newMaze[y][x] == 0) {
                     newMaze[y][x] = 2;
+                    totalPellets++;
                 }
             }
         }
@@ -116,6 +119,9 @@ public class Gameboard extends JPanel implements ActionListener{
         if (maze[gridY][gridX] == 2) {
             maze[gridY][gridX] = 0;
             pelletCounter++;
+            if(pelletCounter==totalPellets) {
+                endGame();
+            }
         }
     }
 
@@ -127,6 +133,11 @@ public class Gameboard extends JPanel implements ActionListener{
             return false;
         }
         return true;
+    }
+
+    private void endGame() {
+        timer.stop();
+        repaint();
     }
 
     @Override
@@ -146,10 +157,10 @@ public class Gameboard extends JPanel implements ActionListener{
             for (int x = 0; x < maze[0].length; x++) {
                 if (maze[y][x] == 1) {
                     g.setColor(Color.BLUE);
-                    g.fillRect(x * tile, y * tile, tile, tile);
+                    g.fillRect(x * tile, y * tile + scoreHeight, tile, tile);
                 } else if (maze[y][x] == 2) {
                     g.setColor(Color.YELLOW);
-                    g.fillOval(x * tile + tile / 4, y * tile + tile / 4, tile / 2, tile / 2);
+                    g.fillOval(x * tile + tile / 4, y * tile + tile / 4 + scoreHeight, tile / 2, tile / 2);
                 }
             }
         }
@@ -157,12 +168,12 @@ public class Gameboard extends JPanel implements ActionListener{
 
     private void drawPacMan(Graphics g) {
         g.setColor(Color.YELLOW);
-        g.fillOval(pacManX, pacManY, tile, tile);
+        g.fillOval(pacManX, pacManY+scoreHeight, tile, tile);
     }
 
     private void drawScore(Graphics g) {
         g.setColor(Color.WHITE);
-        g.drawString("Pellets Collected: " + pelletCounter, 10, frameHeight - 10);
+        g.drawString("Pellets Collected: " + pelletCounter, 10, 20);
     }
 
     private class KAdapter extends KeyAdapter{
