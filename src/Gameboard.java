@@ -1,6 +1,8 @@
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
@@ -11,6 +13,8 @@ import java.util.Random;
 import java.util.Stack;
 import javax.swing.JPanel;
 import javax.swing.Timer;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseAdapter;
 
 public class Gameboard extends JPanel implements ActionListener{
     private Timer timer;
@@ -29,6 +33,9 @@ public class Gameboard extends JPanel implements ActionListener{
     private int pelletCounter=0;
     private int totalPellets=0;
     private int scoreHeight=30;
+    private boolean gameOver=false;
+    private Rectangle exitButton;
+    private Rectangle playAgainButton;
 
     public Gameboard() {
         initBoard();
@@ -38,6 +45,16 @@ public class Gameboard extends JPanel implements ActionListener{
         pacManDY=0;
         newDX=0;
         newDY=0;
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (gameOver && exitButton.contains(e.getPoint())) {
+                    System.exit(0);
+                } else if (playAgainButton.contains(e.getPoint())) {
+                    restartGame();
+                }
+            }
+        });
     }
 
     private void initBoard() {
@@ -137,13 +154,30 @@ public class Gameboard extends JPanel implements ActionListener{
 
     private void endGame() {
         timer.stop();
+        gameOver=true;
         repaint();
+    }
+
+    private void restartGame() {
+        gameOver = false;
+        pelletCounter = 0;
+        pacManX = 40;
+        pacManY = 40;
+        pacManDX = 0;
+        pacManDY = 0;
+        newDX = 0;
+        newDY = 0;
+        maze = generateRandomMaze(rows, cols);
+        timer.restart();
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         drawGame(g);
+        if (pelletCounter == totalPellets) {
+            drawEndGameMessage(g);
+        }
     }
 
     private void drawGame(Graphics g) {
@@ -176,9 +210,57 @@ public class Gameboard extends JPanel implements ActionListener{
         g.drawString("Pellets Collected: " + pelletCounter, 10, 20);
     }
 
+    private void drawEndGameMessage(Graphics g) {
+        String message = "Game Over!";
+        Font font = new Font("MV Boli", Font.BOLD, 30);
+        g.setFont(font);
+        int messageWidth = g.getFontMetrics(font).stringWidth(message);
+        int messageHeight = g.getFontMetrics(font).getHeight();
+        int x = (frameWidth - messageWidth) / 2;
+        int y = (frameHeight - messageHeight) / 2 - 60;
+
+        g.setColor(Color.BLACK);
+        g.fillRect(x - 20, y - 40, messageWidth + 40, messageHeight + 120);
+
+        g.setColor(Color.WHITE);
+        g.drawString(message, x, y);
+
+        Font buttonFont = new Font("MV Boli", Font.PLAIN, 20);
+        g.setFont(buttonFont);
+
+        String exitText = "EXIT";
+        int exitWidth = g.getFontMetrics(buttonFont).stringWidth(exitText);
+        int exitX = (frameWidth - exitWidth) / 2;
+        int exitY = y + 60;
+        exitButton = new Rectangle(exitX - 10, exitY - 30, exitWidth + 20, 40);
+
+        g.setColor(Color.RED);
+        g.fillRect(exitButton.x, exitButton.y, exitButton.width, exitButton.height);
+        g.setColor(Color.WHITE);
+        g.drawString(exitText, exitX, exitY);
+
+        String playAgainText = "PLAY AGAIN";
+        int playAgainWidth = g.getFontMetrics(buttonFont).stringWidth(playAgainText);
+        int playAgainX = (frameWidth - playAgainWidth) / 2;
+        int playAgainY = exitY + 50;
+        playAgainButton = new Rectangle(playAgainX - 10, playAgainY - 30, playAgainWidth + 20, 40);
+
+        g.setColor(Color.GREEN);
+        g.fillRect(playAgainButton.x, playAgainButton.y, playAgainButton.width, playAgainButton.height);
+        g.setColor(Color.WHITE);
+        g.drawString(playAgainText, playAgainX, playAgainY);
+
+        g.setColor(Color.WHITE);
+        g.drawRect(exitButton.x, exitButton.y, exitButton.width, exitButton.height);
+        g.drawRect(playAgainButton.x, playAgainButton.y, playAgainButton.width, playAgainButton.height);
+    }
+
     private class KAdapter extends KeyAdapter{
         @Override
         public void keyPressed(KeyEvent e) {
+            if(gameOver) {
+                return;
+            }
             int key = e.getKeyCode();
 
             if (key == KeyEvent.VK_LEFT) {
