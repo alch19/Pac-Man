@@ -10,7 +10,6 @@ import java.awt.event.KeyEvent;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
-import java.util.Stack;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 import java.awt.event.MouseEvent;
@@ -36,6 +35,7 @@ public class Gameboard extends JPanel implements ActionListener {
     private boolean gameOver = false;
     private Rectangle exitButton;
     private Rectangle playAgainButton;
+    private int[][] ghosts = new int[3][2];
 
     public Gameboard() {
         initBoard();
@@ -68,9 +68,10 @@ public class Gameboard extends JPanel implements ActionListener {
 
         tile = (frameWidth - scoreHeight) / rows;
         maze = generateRandomMaze(rows, cols);
+        spawnGhosts();
     }
 
-    private int[][] generateRandomMaze(int rows, int cols) {
+        private int[][] generateRandomMaze(int rows, int cols) {
         int[][] newMaze = new int[rows][cols];
         Random rand = new Random();
 
@@ -85,7 +86,11 @@ public class Gameboard extends JPanel implements ActionListener {
 
         for (int y = centerY - 1; y <= centerY + 1; y++) {
             for (int x = centerX - 1; x <= centerX + 1; x++) {
-                newMaze[y][x] = 1;
+                if ((y==centerY || y==centerY+1 || y==centerY-1) && (x==centerX || x==centerX+1 || x==centerX-1)) {
+                    newMaze[y][x] = 0;
+                } else {
+                    newMaze[y][x] = 1;
+                }
             }
         }
 
@@ -103,7 +108,7 @@ public class Gameboard extends JPanel implements ActionListener {
 
         for (int y = 1; y < rows - 1; y += 2) {
             for (int x = 1; x < cols - 1; x += 2) {
-                if (rand.nextInt(100) < 50) { //chance
+                if (rand.nextInt(100) < 50) { //CHANCE
                     int direction = rand.nextInt(4);
                     switch (direction) {
                         case 0: // left
@@ -133,7 +138,7 @@ public class Gameboard extends JPanel implements ActionListener {
 
         for (int y = 0; y < rows; y++) {
             for (int x = 0; x < cols; x++) {
-                if (newMaze[y][x] == 0) {
+                if (newMaze[y][x] == 0 && !(y >= centerY - 1 && y <= centerY + 1 && x >= centerX - 1 && x <= centerX + 1)) {
                     newMaze[y][x] = 2;
                     totalPellets++;
                 }
@@ -159,6 +164,37 @@ public class Gameboard extends JPanel implements ActionListener {
                 maze[newY][newX] = 0;
                 maze[y + direction[1] / 2][x + direction[0] / 2] = 0;
                 carveMaze(maze, newX, newY, rows, cols, rand, centerX, centerY);
+            }
+        }
+    }
+
+    private void spawnGhosts() {
+        int centerX = cols / 2;
+        int centerY = rows / 2;
+        ghosts[0][0] = centerX - 1;
+        ghosts[0][1] = centerY;
+        ghosts[1][0] = centerX;
+        ghosts[1][1] = centerY;
+        ghosts[2][0] = centerX + 1;
+        ghosts[2][1] = centerY;
+    }
+
+    private void moveGhosts() {
+        //implement logic here
+        for (int i = 0; i < ghosts.length; i++) {
+            int direction = new Random().nextInt(4);
+            int dx = 0, dy = 0;
+            switch (direction) {
+                case 0: dx = -1; break; // left
+                case 1: dx = 1; break; // right
+                case 2: dy = -1; break; // up
+                case 3: dy = 1; break; // down
+            }
+            int newX = ghosts[i][0] + dx;
+            int newY = ghosts[i][1] + dy;
+            if (isValidMove(newX * tile, newY * tile)) {
+                ghosts[i][0] = newX;
+                ghosts[i][1] = newY;
             }
         }
     }
@@ -218,6 +254,7 @@ public class Gameboard extends JPanel implements ActionListener {
         newDX = 0;
         newDY = 0;
         maze = generateRandomMaze(rows, cols);
+        spawnGhosts();
         timer.restart();
     }
 
@@ -233,6 +270,7 @@ public class Gameboard extends JPanel implements ActionListener {
     private void drawGame(Graphics g) {
         drawMaze(g);
         drawPacMan(g);
+        drawGhosts(g);
         drawScore(g);
     }
 
@@ -253,6 +291,13 @@ public class Gameboard extends JPanel implements ActionListener {
     private void drawPacMan(Graphics g) {
         g.setColor(Color.YELLOW);
         g.fillOval(pacManX, pacManY + scoreHeight, tile, tile);
+    }
+
+    private void drawGhosts(Graphics g) {
+        g.setColor(Color.RED);
+        for (int[] ghost : ghosts) {
+            g.fillOval(ghost[0] * tile, ghost[1] * tile + scoreHeight, tile, tile);
+        }
     }
 
     private void drawScore(Graphics g) {
