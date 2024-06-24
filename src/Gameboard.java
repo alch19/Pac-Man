@@ -79,10 +79,11 @@ public class Gameboard extends JPanel implements ActionListener {
         addKeyListener(new KAdapter());
 
         timer = new Timer(100, this);
-        ghostTimer = new Timer(50, new ActionListener() {
+        ghostTimer = new Timer(10000, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 moveGhosts();
+                repaint();
             }
         });
         mouthTimer = new Timer(100, new ActionListener() {
@@ -146,7 +147,7 @@ public class Gameboard extends JPanel implements ActionListener {
 
         for (int y = 1; y < rows - 1; y += 2) {
             for (int x = 1; x < cols - 1; x += 2) {
-                if (rand.nextInt(100) < 50) { //CHANCE
+                if (rand.nextInt(100) < 70) { //CHANCE
                     int direction = rand.nextInt(4);
                     switch (direction) {
                         case 0: // left
@@ -224,30 +225,32 @@ public class Gameboard extends JPanel implements ActionListener {
             int ghostX = ghosts[i][0];
             int ghostY = ghosts[i][1];
 
+            // Calculate differences between Pac-Man and ghost positions
             int diffX = pacManX / tile - ghostX;
             int diffY = pacManY / tile - ghostY;
 
-            List<DirectionWeight> directions = new ArrayList<>();
+            // Prioritize horizontal or vertical movement with randomness
+            List<int[]> directions = new ArrayList<>();
             if (Math.abs(diffX) > Math.abs(diffY)) {
-                directions.add(new DirectionWeight(diffX > 0 ? 3 : 2, 3));
-                directions.add(new DirectionWeight(diffY > 0 ? 1 : 0, 1));
+                directions.add(new int[] {diffX > 0 ? 3 : 2, rand.nextInt(10) + 1}); // Prioritize horizontal
+                directions.add(new int[] {diffY > 0 ? 1 : 0, rand.nextInt(10) + 1});
             } else {
-                directions.add(new DirectionWeight(diffY > 0 ? 1 : 0, 3));
-                directions.add(new DirectionWeight(diffX > 0 ? 3 : 2, 1));
+                directions.add(new int[] {diffY > 0 ? 1 : 0, rand.nextInt(10) + 1}); // Prioritize vertical
+                directions.add(new int[] {diffX > 0 ? 3 : 2, rand.nextInt(10) + 1});
             }
 
-            directions.add(new DirectionWeight(0, 1)); // up
-            directions.add(new DirectionWeight(1, 1)); // down
-            directions.add(new DirectionWeight(2, 1)); // left
-            directions.add(new DirectionWeight(3, 1)); // right
+            directions.add(new int[] {0, rand.nextInt(10) + 1}); // up
+            directions.add(new int[] {1, rand.nextInt(10) + 1}); // down
+            directions.add(new int[] {2, rand.nextInt(10) + 1}); // left
+            directions.add(new int[] {3, rand.nextInt(10) + 1}); // right
 
-            Collections.shuffle(directions, rand);
+            Collections.sort(directions, (a, b) -> Integer.compare(a[1], b[1])); // Sort by priority
 
-            for (DirectionWeight direction : directions) {
+            for (int[] direction : directions) {
                 int newGhostX = ghostX;
                 int newGhostY = ghostY;
 
-                switch (direction.direction) {
+                switch (direction[0]) {
                     case 0: newGhostY--; break; // up
                     case 1: newGhostY++; break; // down
                     case 2: newGhostX--; break; // left
@@ -262,18 +265,6 @@ public class Gameboard extends JPanel implements ActionListener {
             }
         }
     }
-
-    private class DirectionWeight {
-        int direction;
-        int weight;
-
-        DirectionWeight(int direction, int weight) {
-            this.direction = direction;
-            this.weight = weight;
-        }
-    }
-
-
 
     @Override
     public void actionPerformed(ActionEvent e) {
