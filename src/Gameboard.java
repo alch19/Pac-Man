@@ -16,7 +16,7 @@ import javax.swing.Timer;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseAdapter;
 
-public class Gameboard extends JPanel implements ActionListener{
+public class Gameboard extends JPanel implements ActionListener {
     private Timer timer;
     private int pacManX;
     private int pacManY;
@@ -26,25 +26,25 @@ public class Gameboard extends JPanel implements ActionListener{
     private int newDY;
     private int tile;
     private int[][] maze;
-    private int cols=20;
-    private int rows=20;
-    private int frameWidth=800;
-    private int frameHeight=600;
-    private int pelletCounter=0;
-    private int totalPellets=0;
-    private int scoreHeight=30;
-    private boolean gameOver=false;
+    private int cols = 20;
+    private int rows = 20;
+    private int frameWidth = 800;
+    private int frameHeight = 600;
+    private int pelletCounter = 0;
+    private int totalPellets = 0;
+    private int scoreHeight = 30;
+    private boolean gameOver = false;
     private Rectangle exitButton;
     private Rectangle playAgainButton;
 
     public Gameboard() {
         initBoard();
-        pacManX=40;
-        pacManY=40;
-        pacManDX=0;
-        pacManDY=0;
-        newDX=0;
-        newDY=0;
+        pacManX = 40;
+        pacManY = 40;
+        pacManDX = 0;
+        pacManDY = 0;
+        newDX = 0;
+        newDY = 0;
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -60,17 +60,17 @@ public class Gameboard extends JPanel implements ActionListener{
     private void initBoard() {
         setBackground(Color.BLACK);
         setFocusable(true);
-        setPreferredSize(new Dimension(frameWidth,frameHeight));
+        setPreferredSize(new Dimension(frameWidth, frameHeight));
         addKeyListener(new KAdapter());
 
         timer = new Timer(100, this);
         timer.start();
 
-        tile=(frameWidth-scoreHeight)/rows;
-        maze=generateRandomMaze(rows,cols);
+        tile = (frameWidth - scoreHeight) / rows;
+        maze = generateRandomMaze(rows, cols);
     }
 
-        private int[][] generateRandomMaze(int rows, int cols) {
+    private int[][] generateRandomMaze(int rows, int cols) {
         int[][] newMaze = new int[rows][cols];
         Random rand = new Random();
 
@@ -82,21 +82,28 @@ public class Gameboard extends JPanel implements ActionListener{
 
         int centerX = cols / 2;
         int centerY = rows / 2;
+
         for (int y = centerY - 1; y <= centerY + 1; y++) {
             for (int x = centerX - 1; x <= centerX + 1; x++) {
                 newMaze[y][x] = 1;
             }
         }
 
-        int startX = rand.nextInt(cols / 2) * 2 + 1;
-        int startY = rand.nextInt(rows / 2) * 2 + 1;
-        newMaze[startY][startX] = 0;
+        int startX = rand.nextInt((cols - 2) / 2) * 2 + 1;
+        int startY = rand.nextInt((rows - 2) / 2) * 2 + 1;
+        if (newMaze[startY][startX] == 1) {
+            newMaze[startY][startX] = 0;
+        } else {
+            startX = 1;
+            startY = 1;
+            newMaze[startY][startX] = 0;
+        }
 
-        carveMaze(newMaze, startX, startY, rows, cols, rand);
+        carveMaze(newMaze, startX, startY, rows, cols, rand, centerX, centerY);
 
         for (int y = 1; y < rows - 1; y += 2) {
             for (int x = 1; x < cols - 1; x += 2) {
-                if (rand.nextInt(100) < 50) { // CHANCE OF CONNECTIVITY
+                if (rand.nextInt(100) < 50) { //chance
                     int direction = rand.nextInt(4);
                     switch (direction) {
                         case 0: // left
@@ -136,22 +143,25 @@ public class Gameboard extends JPanel implements ActionListener{
         return newMaze;
     }
 
-private void carveMaze(int[][] maze, int x, int y, int rows, int cols, Random rand) {
-    int[][] directions = {{0, -2}, {0, 2}, {-2, 0}, {2, 0}};
-    Collections.shuffle(Arrays.asList(directions), rand);
+    private void carveMaze(int[][] maze, int x, int y, int rows, int cols, Random rand, int centerX, int centerY) {
+        int[][] directions = {{0, -2}, {0, 2}, {-2, 0}, {2, 0}};
+        Collections.shuffle(Arrays.asList(directions), rand);
 
-    for (int[] direction : directions) {
-        int newX = x + direction[0];
-        int newY = y + direction[1];
+        for (int[] direction : directions) {
+            int newX = x + direction[0];
+            int newY = y + direction[1];
 
-        if (newX > 0 && newX < cols - 1 && newY > 0 && newY < rows - 1 && maze[newY][newX] == 1) {
-            maze[newY][newX] = 0;
-            maze[y + direction[1] / 2][x + direction[0] / 2] = 0;
-            carveMaze(maze, newX, newY, rows, cols, rand);
+            if ((newX >= centerX - 1 && newX <= centerX + 1) && (newY >= centerY - 1 && newY <= centerY + 1)) {
+                continue;
+            }
+
+            if (newX > 0 && newX < cols - 1 && newY > 0 && newY < rows - 1 && maze[newY][newX] == 1) {
+                maze[newY][newX] = 0;
+                maze[y + direction[1] / 2][x + direction[0] / 2] = 0;
+                carveMaze(maze, newX, newY, rows, cols, rand, centerX, centerY);
+            }
         }
     }
-}
-
 
     @Override
     public void actionPerformed(ActionEvent e) {
@@ -176,15 +186,15 @@ private void carveMaze(int[][] maze, int x, int y, int rows, int cols, Random ra
         if (maze[gridY][gridX] == 2) {
             maze[gridY][gridX] = 0;
             pelletCounter++;
-            if(pelletCounter==totalPellets) {
+            if (pelletCounter == totalPellets) {
                 endGame();
             }
         }
     }
 
     private boolean isValidMove(int x, int y) {
-        int gridX=x/tile;
-        int gridY=y/tile;
+        int gridX = x / tile;
+        int gridY = y / tile;
 
         if (maze[gridY][gridX] == 1) {
             return false;
@@ -194,7 +204,7 @@ private void carveMaze(int[][] maze, int x, int y, int rows, int cols, Random ra
 
     private void endGame() {
         timer.stop();
-        gameOver=true;
+        gameOver = true;
         repaint();
     }
 
@@ -242,7 +252,7 @@ private void carveMaze(int[][] maze, int x, int y, int rows, int cols, Random ra
 
     private void drawPacMan(Graphics g) {
         g.setColor(Color.YELLOW);
-        g.fillOval(pacManX, pacManY+scoreHeight, tile, tile);
+        g.fillOval(pacManX, pacManY + scoreHeight, tile, tile);
     }
 
     private void drawScore(Graphics g) {
@@ -295,10 +305,10 @@ private void carveMaze(int[][] maze, int x, int y, int rows, int cols, Random ra
         g.drawRect(playAgainButton.x, playAgainButton.y, playAgainButton.width, playAgainButton.height);
     }
 
-    private class KAdapter extends KeyAdapter{
+    private class KAdapter extends KeyAdapter {
         @Override
         public void keyPressed(KeyEvent e) {
-            if(gameOver) {
+            if (gameOver) {
                 return;
             }
             int key = e.getKeyCode();
