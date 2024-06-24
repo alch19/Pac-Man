@@ -2,6 +2,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -10,6 +11,8 @@ import java.awt.event.KeyEvent;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
+
+import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 import java.awt.event.MouseEvent;
@@ -17,6 +20,7 @@ import java.awt.event.MouseAdapter;
 
 public class Gameboard extends JPanel implements ActionListener {
     private Timer timer;
+    private Timer mouthTimer;
     private int pacManX;
     private int pacManY;
     private int pacManDX;
@@ -35,9 +39,17 @@ public class Gameboard extends JPanel implements ActionListener {
     private boolean gameOver = false;
     private Rectangle exitButton;
     private Rectangle playAgainButton;
+    private boolean mouthOpen=false;
     private int[][] ghosts = new int[3][2];
 
+    private Image pacManClosed;
+    private Image pacManOpenUp;
+    private Image pacManOpenDown;
+    private Image pacManOpenLeft;
+    private Image pacManOpenRight;
+
     public Gameboard() {
+        loadImages();
         initBoard();
         pacManX = 40;
         pacManY = 40;
@@ -64,14 +76,30 @@ public class Gameboard extends JPanel implements ActionListener {
         addKeyListener(new KAdapter());
 
         timer = new Timer(100, this);
+        mouthTimer = new Timer(500, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                mouthOpen = !mouthOpen;
+                repaint();
+            }
+        });
         timer.start();
+        mouthTimer.start();
 
         tile = (frameWidth - scoreHeight) / rows;
         maze = generateRandomMaze(rows, cols);
         spawnGhosts();
     }
 
-        private int[][] generateRandomMaze(int rows, int cols) {
+    private void loadImages() {
+        pacManOpenUp = new ImageIcon("pacManOpenUp.png").getImage();
+        pacManOpenDown = new ImageIcon("pacManOpenDown.png").getImage();
+        pacManOpenLeft = new ImageIcon("pacManOpenLeft.png").getImage();
+        pacManOpenRight = new ImageIcon("pacManOpenRight.png").getImage();
+        pacManClosed = new ImageIcon("pacManClosed.png").getImage();
+    }
+
+    private int[][] generateRandomMaze(int rows, int cols) {
         int[][] newMaze = new int[rows][cols];
         Random rand = new Random();
 
@@ -202,6 +230,7 @@ public class Gameboard extends JPanel implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         movePacMan();
+        moveGhosts();
         repaint();
     }
 
@@ -240,6 +269,7 @@ public class Gameboard extends JPanel implements ActionListener {
 
     private void endGame() {
         timer.stop();
+        mouthTimer.stop();
         gameOver = true;
         repaint();
     }
@@ -256,6 +286,7 @@ public class Gameboard extends JPanel implements ActionListener {
         maze = generateRandomMaze(rows, cols);
         spawnGhosts();
         timer.restart();
+        mouthTimer.restart();
     }
 
     @Override
@@ -289,8 +320,21 @@ public class Gameboard extends JPanel implements ActionListener {
     }
 
     private void drawPacMan(Graphics g) {
-        g.setColor(Color.YELLOW);
-        g.fillOval(pacManX, pacManY + scoreHeight, tile, tile);
+        Image pacManImage = pacManClosed;
+
+        if (pacManDX > 0) {
+            pacManImage = mouthOpen ? pacManOpenRight : pacManClosed;
+        } else if (pacManDX < 0) {
+            pacManImage = mouthOpen ? pacManOpenLeft : pacManClosed;
+        } else if (pacManDY > 0) {
+            pacManImage = mouthOpen ? pacManOpenDown : pacManClosed;
+        } else if (pacManDY < 0) {
+            pacManImage = mouthOpen ? pacManOpenUp : pacManClosed;
+        }
+
+        if (pacManImage != null) {
+            g.drawImage(pacManImage, pacManX, pacManY + scoreHeight, tile, tile, this);
+        }
     }
 
     private void drawGhosts(Graphics g) {
