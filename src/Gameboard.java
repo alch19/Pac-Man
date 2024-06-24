@@ -70,38 +70,60 @@ public class Gameboard extends JPanel implements ActionListener{
         maze=generateRandomMaze(rows,cols);
     }
 
-    private int[][] generateRandomMaze(int rows, int cols) {
+        private int[][] generateRandomMaze(int rows, int cols) {
         int[][] newMaze = new int[rows][cols];
+        Random rand = new Random();
+
         for (int y = 0; y < rows; y++) {
             for (int x = 0; x < cols; x++) {
                 newMaze[y][x] = 1;
             }
         }
 
-        Stack<int[]> stack = new Stack<>();
-        int startX = 1;
-        int startY = 1;
-        stack.push(new int[]{startX, startY});
+        int centerX = cols / 2;
+        int centerY = rows / 2;
+        for (int y = centerY - 1; y <= centerY + 1; y++) {
+            for (int x = centerX - 1; x <= centerX + 1; x++) {
+                newMaze[y][x] = 1;
+            }
+        }
+
+        int startX = rand.nextInt(cols / 2) * 2 + 1;
+        int startY = rand.nextInt(rows / 2) * 2 + 1;
         newMaze[startY][startX] = 0;
 
-        int[][] directions = {{0, -2}, {0, 2}, {-2, 0}, {2, 0}};
-        Random rand = new Random();
+        carveMaze(newMaze, startX, startY, rows, cols, rand);
 
-        while (!stack.isEmpty()) {
-            int[] current = stack.pop();
-            Collections.shuffle(Arrays.asList(directions), rand);
-
-            for (int[] direction : directions) {
-                int newX = current[0] + direction[0];
-                int newY = current[1] + direction[1];
-
-                if (newX > 0 && newX < cols - 1 && newY > 0 && newY < rows - 1 && newMaze[newY][newX] == 1) {
-                    newMaze[newY][newX] = 0;
-                    newMaze[current[1] + direction[1] / 2][current[0] + direction[0] / 2] = 0;
-                    stack.push(new int[]{newX, newY});
+        for (int y = 1; y < rows - 1; y += 2) {
+            for (int x = 1; x < cols - 1; x += 2) {
+                if (rand.nextInt(100) < 50) { // CHANCE OF CONNECTIVITY
+                    int direction = rand.nextInt(4);
+                    switch (direction) {
+                        case 0: // left
+                            if (x > 1 && newMaze[y][x - 2] == 0) {
+                                newMaze[y][x - 1] = 0;
+                            }
+                            break;
+                        case 1: // right
+                            if (x < cols - 2 && newMaze[y][x + 2] == 0) {
+                                newMaze[y][x + 1] = 0;
+                            }
+                            break;
+                        case 2: // up
+                            if (y > 1 && newMaze[y - 2][x] == 0) {
+                                newMaze[y - 1][x] = 0;
+                            }
+                            break;
+                        case 3: // down
+                            if (y < rows - 2 && newMaze[y + 2][x] == 0) {
+                                newMaze[y + 1][x] = 0;
+                            }
+                            break;
+                    }
                 }
             }
         }
+
         for (int y = 0; y < rows; y++) {
             for (int x = 0; x < cols; x++) {
                 if (newMaze[y][x] == 0) {
@@ -110,8 +132,26 @@ public class Gameboard extends JPanel implements ActionListener{
                 }
             }
         }
+
         return newMaze;
     }
+
+private void carveMaze(int[][] maze, int x, int y, int rows, int cols, Random rand) {
+    int[][] directions = {{0, -2}, {0, 2}, {-2, 0}, {2, 0}};
+    Collections.shuffle(Arrays.asList(directions), rand);
+
+    for (int[] direction : directions) {
+        int newX = x + direction[0];
+        int newY = y + direction[1];
+
+        if (newX > 0 && newX < cols - 1 && newY > 0 && newY < rows - 1 && maze[newY][newX] == 1) {
+            maze[newY][newX] = 0;
+            maze[y + direction[1] / 2][x + direction[0] / 2] = 0;
+            carveMaze(maze, newX, newY, rows, cols, rand);
+        }
+    }
+}
+
 
     @Override
     public void actionPerformed(ActionEvent e) {
