@@ -5,8 +5,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Random;
-
+import java.util.Stack;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
@@ -41,14 +43,14 @@ public class Gameboard extends JPanel implements ActionListener{
         setPreferredSize(new Dimension(frameWidth,frameHeight));
         addKeyListener(new KAdapter());
 
-        timer = new Timer(40, this);
+        timer = new Timer(100, this);
         timer.start();
 
         tile=frameWidth/rows;
         maze=generateRandomMaze(rows,cols);
     }
 
-    private int[][] generateRandomMaze(int rows, int cols) {
+    /*private int[][] generateRandomMaze(int rows, int cols) {
         Random rand=new Random();
         int[][] newMaze=new int[rows][cols];
         for (int y = 0; y < rows; y++) {
@@ -61,6 +63,42 @@ public class Gameboard extends JPanel implements ActionListener{
             }
         }
         newMaze[1][1] = 0;
+        return newMaze;
+    }*/
+
+    private int[][] generateRandomMaze(int rows, int cols) {
+        int[][] newMaze = new int[rows][cols];
+        for (int y = 0; y < rows; y++) {
+            for (int x = 0; x < cols; x++) {
+                newMaze[y][x] = 1;
+            }
+        }
+
+        Stack<int[]> stack = new Stack<>();
+        int startX = 1;
+        int startY = 1;
+        stack.push(new int[]{startX, startY});
+        newMaze[startY][startX] = 0;
+
+        int[][] directions = {{0, -2}, {0, 2}, {-2, 0}, {2, 0}};
+        Random rand = new Random();
+
+        while (!stack.isEmpty()) {
+            int[] current = stack.pop();
+            Collections.shuffle(Arrays.asList(directions), rand);
+
+            for (int[] direction : directions) {
+                int newX = current[0] + direction[0];
+                int newY = current[1] + direction[1];
+
+                if (newX > 0 && newX < cols - 1 && newY > 0 && newY < rows - 1 && newMaze[newY][newX] == 1) {
+                    newMaze[newY][newX] = 0;
+                    newMaze[current[1] + direction[1] / 2][current[0] + direction[0] / 2] = 0;
+                    stack.push(new int[]{newX, newY});
+                }
+            }
+        }
+
         return newMaze;
     }
 
