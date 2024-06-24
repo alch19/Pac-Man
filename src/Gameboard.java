@@ -8,10 +8,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
-
 import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 import javax.swing.Timer;
@@ -21,6 +22,7 @@ import java.awt.event.MouseAdapter;
 public class Gameboard extends JPanel implements ActionListener {
     private Timer timer;
     private Timer mouthTimer;
+    private Timer ghostTimer;
     private int pacManX;
     private int pacManY;
     private int pacManDX;
@@ -47,6 +49,7 @@ public class Gameboard extends JPanel implements ActionListener {
     private Image pacManOpenDown;
     private Image pacManOpenLeft;
     private Image pacManOpenRight;
+    private Image blueGhost;
 
     public Gameboard() {
         loadImages();
@@ -76,7 +79,13 @@ public class Gameboard extends JPanel implements ActionListener {
         addKeyListener(new KAdapter());
 
         timer = new Timer(100, this);
-        mouthTimer = new Timer(500, new ActionListener() {
+        ghostTimer = new Timer(50, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                moveGhosts();
+            }
+        });
+        mouthTimer = new Timer(100, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 mouthOpen = !mouthOpen;
@@ -97,6 +106,7 @@ public class Gameboard extends JPanel implements ActionListener {
         pacManOpenLeft = new ImageIcon("pacManOpenLeft.png").getImage();
         pacManOpenRight = new ImageIcon("pacManOpenRight.png").getImage();
         pacManClosed = new ImageIcon("pacManClosed.png").getImage();
+        blueGhost = new ImageIcon("blueGhost.png").getImage();
     }
 
     private int[][] generateRandomMaze(int rows, int cols) {
@@ -208,24 +218,62 @@ public class Gameboard extends JPanel implements ActionListener {
     }
 
     private void moveGhosts() {
-        //implement logic here
+        Random rand = new Random();
+
         for (int i = 0; i < ghosts.length; i++) {
-            int direction = new Random().nextInt(4);
-            int dx = 0, dy = 0;
-            switch (direction) {
-                case 0: dx = -1; break; // left
-                case 1: dx = 1; break; // right
-                case 2: dy = -1; break; // up
-                case 3: dy = 1; break; // down
+            int ghostX = ghosts[i][0];
+            int ghostY = ghosts[i][1];
+
+            int diffX = pacManX / tile - ghostX;
+            int diffY = pacManY / tile - ghostY;
+
+            List<DirectionWeight> directions = new ArrayList<>();
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                directions.add(new DirectionWeight(diffX > 0 ? 3 : 2, 3));
+                directions.add(new DirectionWeight(diffY > 0 ? 1 : 0, 1));
+            } else {
+                directions.add(new DirectionWeight(diffY > 0 ? 1 : 0, 3));
+                directions.add(new DirectionWeight(diffX > 0 ? 3 : 2, 1));
             }
-            int newX = ghosts[i][0] + dx;
-            int newY = ghosts[i][1] + dy;
-            if (isValidMove(newX * tile, newY * tile)) {
-                ghosts[i][0] = newX;
-                ghosts[i][1] = newY;
+
+            directions.add(new DirectionWeight(0, 1)); // up
+            directions.add(new DirectionWeight(1, 1)); // down
+            directions.add(new DirectionWeight(2, 1)); // left
+            directions.add(new DirectionWeight(3, 1)); // right
+
+            Collections.shuffle(directions, rand);
+
+            for (DirectionWeight direction : directions) {
+                int newGhostX = ghostX;
+                int newGhostY = ghostY;
+
+                switch (direction.direction) {
+                    case 0: newGhostY--; break; // up
+                    case 1: newGhostY++; break; // down
+                    case 2: newGhostX--; break; // left
+                    case 3: newGhostX++; break; // right
+                }
+
+                if (isValidMove(newGhostX * tile, newGhostY * tile)) {
+                    ghosts[i][0] = newGhostX;
+                    ghosts[i][1] = newGhostY;
+                    break;
+                }
             }
         }
     }
+
+    private class DirectionWeight {
+        int direction;
+        int weight;
+
+        DirectionWeight(int direction, int weight) {
+            this.direction = direction;
+            this.weight = weight;
+        }
+    }
+
+
 
     @Override
     public void actionPerformed(ActionEvent e) {
@@ -338,11 +386,11 @@ public class Gameboard extends JPanel implements ActionListener {
     }
 
     private void drawGhosts(Graphics g) {
-        g.setColor(Color.RED);
         for (int[] ghost : ghosts) {
-            g.fillOval(ghost[0] * tile, ghost[1] * tile + scoreHeight, tile, tile);
+            g.drawImage(blueGhost, ghost[0] * tile, ghost[1] * tile + scoreHeight, tile, tile, this);
         }
     }
+
 
     private void drawScore(Graphics g) {
         g.setColor(Color.WHITE);
