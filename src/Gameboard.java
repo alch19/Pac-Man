@@ -46,6 +46,7 @@ public class Gameboard extends JPanel implements ActionListener {
     private boolean mouthOpen=false;
     private int[][] ghosts = new int[3][2];
     private List<int[]> powerUps = new ArrayList<>();
+    private boolean[] activeGhosts;
 
     private Image pacManClosed;
     private Image pacManOpenUp;
@@ -111,6 +112,8 @@ public class Gameboard extends JPanel implements ActionListener {
         maze = generateRandomMaze(rows, cols);
         spawnGhosts();
         spawnPowerUps();
+        activeGhosts = new boolean[ghosts.length];
+        Arrays.fill(activeGhosts, true);
     }
 
     private void loadImages() {
@@ -126,7 +129,7 @@ public class Gameboard extends JPanel implements ActionListener {
     private int[][] generateRandomMaze(int rows, int cols) {
         int[][] newMaze = new int[rows][cols];
         Random rand = new Random();
-
+        totalPellets=0;
         for (int y = 0; y < rows; y++) {
             for (int x = 0; x < cols; x++) {
                 newMaze[y][x] = 1;
@@ -333,7 +336,33 @@ public class Gameboard extends JPanel implements ActionListener {
                 break;
             }
         }
+
+        checkGhostCollision();
     }
+
+    private void checkGhostCollision() {
+        int gridX = pacManX / tile;
+        int gridY = (pacManY + scoreHeight) / tile;
+        
+        for (int i = 0; i < ghosts.length; i++) {
+            if (activeGhosts[i]) {
+                int ghostGridX = ghosts[i][0];
+                int ghostGridY = ghosts[i][1];
+                
+                if (gridX == ghostGridX && gridY == ghostGridY) {
+                    if (poweredUp) {
+                        activeGhosts[i] = false;
+                    } else {
+                        endGame();
+                        
+                    }
+                }
+            }
+        }
+    }
+
+
+
 
     private boolean isValidMove(int x, int y) {
         int gridX = x / tile;
@@ -357,7 +386,7 @@ public class Gameboard extends JPanel implements ActionListener {
     private void restartGame() {
         gameOver = false;
         pelletCounter = 0;
-        poweredUp=false;
+        poweredUp = false;
         pacManX = 40;
         pacManY = 40;
         pacManDX = 0;
@@ -365,17 +394,35 @@ public class Gameboard extends JPanel implements ActionListener {
         newDX = 0;
         newDY = 0;
         maze = generateRandomMaze(rows, cols);
+        totalPellets = countTotalPellets();
         spawnGhosts();
+        Arrays.fill(activeGhosts, true);
         timer.restart();
         mouthTimer.restart();
-        powerUpTimer.stop();
+        powerUpTimer.restart();
+        spawnPowerUps();
     }
+
+    private int countTotalPellets() {
+        int pellets = 0;
+        for (int y = 0; y < rows; y++) {
+            for (int x = 0; x < cols; x++) {
+                if (maze[y][x] == 2) {
+                    pellets++;
+                }
+            }
+        }
+        return pellets;
+    }
+
+
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         drawGame(g);
-        if (pelletCounter == totalPellets) {
+        if (gameOver || pelletCounter == totalPellets-5) {
+            endGame();
             drawEndGameMessage(g);
         }
     }
@@ -421,11 +468,14 @@ public class Gameboard extends JPanel implements ActionListener {
     }
 
     private void drawGhosts(Graphics g) {
-        for (int[] ghost : ghosts) {
-            Image ghostImage = poweredUp ? redGhost : blueGhost;
-            g.drawImage(ghostImage, ghost[0] * tile, ghost[1] * tile + scoreHeight, tile, tile, this);
+        for (int i = 0; i < ghosts.length; i++) {
+            if (activeGhosts[i]) {
+                Image ghostImage = poweredUp ? redGhost : blueGhost;
+                g.drawImage(ghostImage, ghosts[i][0] * tile, ghosts[i][1] * tile + scoreHeight, tile, tile, this);
+            }
         }
     }
+
 
     private void drawPowerUps(Graphics g) {
         g.setColor(Color.RED);
