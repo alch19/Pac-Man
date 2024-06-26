@@ -232,17 +232,22 @@ public class Gameboard extends JPanel implements ActionListener {
     }
 
     private void spawnPowerUps() {
-        Random rand = new Random();
-        powerUps.clear();
-        for (int i = 0; i < 5; i++) {
-            int x, y;
-            do {
-                x = rand.nextInt(cols);
-                y = rand.nextInt(rows);
-            } while (maze[y][x] != 0 || (x == pacManX / tile && y == pacManY / tile));
+    Random rand = new Random();
+    powerUps.clear();
+    int powerUpsPlaced = 0;
+
+    while (powerUpsPlaced < 5) {
+        int x = rand.nextInt(cols);
+        int y = rand.nextInt(rows);
+
+        if (maze[y][x] == 2) {
+            maze[y][x] = 0;
             powerUps.add(new int[]{x, y});
+            powerUpsPlaced++;
         }
     }
+}
+
 
     private void moveGhosts() {
         Random rand = new Random();
